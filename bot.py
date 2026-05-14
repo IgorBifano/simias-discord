@@ -136,11 +136,11 @@ async def on_ready():
 @client.event
 async def on_message(message):
 
-    # Ignora o próprio bot
+    # Ignora mensagens do próprio bot
     if message.author == client.user:
         return
 
-    # Debug
+    # Debug logs
     print(f"[MSG] {message.author}: {message.content}")
 
     # Detecta mention do bot
@@ -148,7 +148,7 @@ async def on_message(message):
 
         try:
 
-            # Remove mention
+            # Remove mention da mensagem
             user_message = message.content.replace(
                 f"<@{client.user.id}>",
                 ""
@@ -157,11 +157,11 @@ async def on_message(message):
                 ""
             ).strip()
 
-            # Fallback
+            # Caso vazio
             if not user_message:
                 user_message = "Diga algo."
 
-            # Mensagem thinking
+            # Thinking message
             thinking_message = await message.channel.send(
                 random.choice(thinking_messages)
             )
@@ -170,7 +170,7 @@ async def on_message(message):
             async with message.channel.typing():
 
                 response = anthropic.messages.create(
-                    model="claude-3-5-sonnet-20241022",
+                    model="claude-3-7-sonnet-latest",
                     max_tokens=300,
                     system=SYSTEM_PROMPT,
                     messages=[
@@ -181,7 +181,7 @@ async def on_message(message):
                     ]
                 )
 
-            # Parse resposta
+            # Parse da resposta
             reply = ""
 
             if hasattr(response, "content"):
@@ -191,7 +191,7 @@ async def on_message(message):
                     if hasattr(block, "text"):
                         reply += block.text
 
-            # Fallback vazio
+            # Segurança
             if not reply.strip():
                 reply = (
                     "O núcleo cognitivo retornou silêncio absoluto."
