@@ -171,7 +171,7 @@ async def on_message(message):
 
                 response = anthropic.messages.create(
                     model="claude-sonnet-4-5",
-                    max_tokens=300,
+                    max_tokens=1000,
                     system=SYSTEM_PROMPT,
                     messages=[
                         {
