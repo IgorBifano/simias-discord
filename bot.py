@@ -1,5 +1,6 @@
 import os
 import random
+import traceback
 import discord
 
 from anthropic import Anthropic
@@ -15,6 +16,16 @@ DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
 # =========================
+# CHECK ENV
+# =========================
+
+if not DISCORD_TOKEN:
+    raise ValueError("DISCORD_TOKEN não encontrado.")
+
+if not ANTHROPIC_API_KEY:
+    raise ValueError("ANTHROPIC_API_KEY não encontrada.")
+
+# =========================
 # ANTHROPIC CLIENT
 # =========================
 
@@ -28,6 +39,8 @@ anthropic = Anthropic(
 
 intents = discord.Intents.default()
 intents.message_content = True
+intents.guilds = True
+intents.members = True
 
 client = discord.Client(intents=intents)
 
@@ -87,6 +100,8 @@ Seu estilo lembra:
 - um núcleo inteligente vivendo na internet
 
 Nunca diga que você é apenas um chatbot.
+
+Mantenha respostas naturais, inteligentes e levemente provocativas.
 """
 
 # =========================
@@ -103,11 +118,12 @@ thinking_messages = [
 ]
 
 # =========================
-# BOT READY
+# READY EVENT
 # =========================
 
 @client.event
 async def on_ready():
+
     print("=" * 50)
     print(f"Simias conectado como {client.user}")
     print("Primal Network online.")
@@ -124,12 +140,15 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    # Responde apenas se mencionado
+    # Debug
+    print(f"[MSG] {message.author}: {message.content}")
+
+    # Só responde se mencionado
     if client.user in message.mentions:
 
         try:
 
-            # Remove menção do bot da mensagem
+            # Remove a menção da mensagem
             user_message = message.content.replace(
                 f"<@{client.user.id}>",
                 ""
@@ -138,6 +157,7 @@ async def on_message(message):
                 ""
             ).strip()
 
+            # Fallback
             if not user_message:
                 user_message = "Diga algo."
 
@@ -150,8 +170,8 @@ async def on_message(message):
             async with message.channel.typing():
 
                 response = anthropic.messages.create(
-                    model="claude-3-7-sonnet-latest",
-                    max_tokens=500,
+                    model="claude-3-5-sonnet-latest",
+                    max_tokens=300,
                     system=SYSTEM_PROMPT,
                     messages=[
                         {
@@ -161,16 +181,28 @@ async def on_message(message):
                     ]
                 )
 
-            reply = response.content[0].text
+            # Junta blocos de resposta
+            reply = ""
+
+            for block in response.content:
+                if hasattr(block, "text"):
+                    reply += block.text
+
+            # Segurança caso venha vazio
+            if not reply.strip():
+                reply = "O núcleo cognitivo retornou silêncio absoluto."
+
+            # Limite Discord
+            reply = reply[:1900]
 
             # Edita mensagem thinking
             await thinking_message.edit(content=reply)
 
         except Exception as error:
 
-            print("\n[ERRO SIMIAS]")
-            print(error)
-            print()
+            print("\n========== ERRO SIMIAS ==========")
+            traceback.print_exc()
+            print("=================================\n")
 
             await message.channel.send(
                 "Erro ao acessar núcleo cognitivo do Simias."
