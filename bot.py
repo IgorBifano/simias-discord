@@ -143,12 +143,12 @@ async def on_message(message):
     # Debug
     print(f"[MSG] {message.author}: {message.content}")
 
-    # Só responde se mencionado
+    # Detecta mention do bot
     if str(client.user.id) in message.content:
 
         try:
 
-            # Remove a menção da mensagem
+            # Remove mention
             user_message = message.content.replace(
                 f"<@{client.user.id}>",
                 ""
@@ -161,7 +161,7 @@ async def on_message(message):
             if not user_message:
                 user_message = "Diga algo."
 
-            # Mensagem fake de thinking
+            # Mensagem thinking
             thinking_message = await message.channel.send(
                 random.choice(thinking_messages)
             )
@@ -170,7 +170,7 @@ async def on_message(message):
             async with message.channel.typing():
 
                 response = anthropic.messages.create(
-                    model="claude-3-5-sonnet-latest",
+                    model="claude-3-5-sonnet-20241022",
                     max_tokens=300,
                     system=SYSTEM_PROMPT,
                     messages=[
@@ -181,22 +181,29 @@ async def on_message(message):
                     ]
                 )
 
-            # Junta blocos de resposta
+            # Parse resposta
             reply = ""
 
-            for block in response.content:
-                if hasattr(block, "text"):
-                    reply += block.text
+            if hasattr(response, "content"):
 
-            # Segurança caso venha vazio
+                for block in response.content:
+
+                    if hasattr(block, "text"):
+                        reply += block.text
+
+            # Fallback vazio
             if not reply.strip():
-                reply = "O núcleo cognitivo retornou silêncio absoluto."
+                reply = (
+                    "O núcleo cognitivo retornou silêncio absoluto."
+                )
 
             # Limite Discord
             reply = reply[:1900]
 
             # Edita mensagem thinking
-            await thinking_message.edit(content=reply)
+            await thinking_message.edit(
+                content=reply
+            )
 
         except Exception as error:
 
@@ -205,7 +212,7 @@ async def on_message(message):
             print("=================================\n")
 
             await message.channel.send(
-                "Erro ao acessar núcleo cognitivo do Simias."
+                f"Erro ao acessar núcleo cognitivo do Simias.\n```{error}```"
             )
 
 # =========================
