@@ -144,7 +144,7 @@ async def on_message(message):
     print(f"[MSG] {message.author}: {message.content}")
 
     # Só responde se mencionado
-    if client.user in message.mentions:
+    if str(client.user.id) in message.content:
 
         try:
 
